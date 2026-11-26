@@ -1,16 +1,14 @@
 import React from 'react';
 import { 
-  ClipboardList, 
   Users, 
-  FileText, 
   Settings, 
   ShieldCheck
 } from 'lucide-react';
 import type { BusinessSettings } from '../types';
 
 interface NavbarProps {
-  activeTab: 'daily' | 'monthly' | 'clients' | 'settings';
-  setActiveTab: (tab: 'daily' | 'monthly' | 'clients' | 'settings') => void;
+  activeTab: 'daily' | 'monthly' | 'bill' | 'clients' | 'settings';
+  setActiveTab: (tab: 'daily' | 'monthly' | 'bill' | 'clients' | 'settings') => void;
   settings: BusinessSettings;
   pendingAnomaliesCount: number;
 }
@@ -48,55 +46,72 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* Nav Tabs */}
       <div className="bg-slate-800/90 border-t border-slate-700/60 px-2 sm:px-4">
         <nav className="max-w-7xl mx-auto flex space-x-1 sm:space-x-2 overflow-x-auto scrollbar-none py-1.5">
+          {/* DIARY 1: DAILY DIARY (લાંબો રોજમેળ ચોપડો) */}
           <button
             onClick={() => setActiveTab('daily')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap cursor-pointer ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-black transition-all whitespace-nowrap cursor-pointer ${
               activeTab === 'daily'
-                ? 'bg-amber-500 text-slate-950 font-semibold shadow-sm'
+                ? 'bg-amber-500 text-slate-950 shadow-sm'
                 : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
             }`}
           >
-            <ClipboardList className="w-4 h-4" />
-            ડેઇલી એન્ટ્રી (રોજિંદી)
+            <span>📓</span>
+            <span>ડેઇલી ડાયરી (રોજમેળ)</span>
           </button>
 
+          {/* DIARY 2: MONTHLY DIARY (ખાતાવહી ચોપડો - પેજ સ્વાઈપ) */}
           <button
             onClick={() => setActiveTab('monthly')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap relative cursor-pointer ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-black transition-all whitespace-nowrap relative cursor-pointer ${
               activeTab === 'monthly'
-                ? 'bg-amber-500 text-slate-950 font-semibold shadow-sm'
+                ? 'bg-amber-500 text-slate-950 shadow-sm'
                 : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
             }`}
           >
-            <FileText className="w-4 h-4" />
-            માસિક બિલિંગ & વ્હોટ્સએપ
+            <span>📖</span>
+            <span>માસિક ડાયરી (ખાતાવહી)</span>
             {pendingAnomaliesCount > 0 && (
               <span className="w-2 h-2 rounded-full bg-red-500 animate-ping absolute top-1.5 right-1.5" />
             )}
           </button>
 
+          {/* DIARY 3: BILL DIARY (ગ્રાહક બિલ સ્લીપ - જમા જમા) */}
           <button
-            onClick={() => setActiveTab('clients')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap cursor-pointer ${
-              activeTab === 'clients'
-                ? 'bg-amber-500 text-slate-950 font-semibold shadow-sm'
+            onClick={() => setActiveTab('bill')}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-black transition-all whitespace-nowrap cursor-pointer ${
+              activeTab === 'bill'
+                ? 'bg-amber-500 text-slate-950 shadow-sm'
                 : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
             }`}
           >
-            <Users className="w-4 h-4" />
-            ગ્રાહક & જમા ખાતાવહી
+            <span>📑</span>
+            <span>બિલ ડાયરી (ગ્રાહક સ્લીપ)</span>
           </button>
 
+          {/* ADMIN: CLIENTS */}
           <button
-            onClick={() => setActiveTab('settings')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap cursor-pointer ${
-              activeTab === 'settings'
-                ? 'bg-amber-500 text-slate-950 font-semibold shadow-sm'
-                : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+            onClick={() => setActiveTab('clients')}
+            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
+              activeTab === 'clients'
+                ? 'bg-slate-700 text-white font-bold'
+                : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
             }`}
           >
-            <Settings className="w-4 h-4" />
-            સેટિંગ્સ & બેકઅપ
+            <Users className="w-3.5 h-3.5" />
+            <span>ગ્રાહકો & જમા</span>
+          </button>
+
+          {/* ADMIN: SETTINGS */}
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
+              activeTab === 'settings'
+                ? 'bg-slate-700 text-white font-bold'
+                : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+            }`}
+          >
+            <Settings className="w-3.5 h-3.5" />
+            <span>સેટિંગ્સ</span>
           </button>
         </nav>
       </div>

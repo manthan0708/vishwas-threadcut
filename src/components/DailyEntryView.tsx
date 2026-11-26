@@ -47,7 +47,41 @@ export const DailyEntryView: React.FC<DailyEntryViewProps> = ({
   // USER REQUEST: Authentic Deshi Chopdo (Ruled Notebook) View vs Standard Table
   const [entryDisplayMode, setEntryDisplayMode] = useState<'chopdo' | 'table'>('chopdo');
 
-  // Locked/Finalized Dates tracking (stored in localStorage so it persists)
+  // USER REQUEST: Month-wise chopdo selection, then date-wise page with Back button
+  const [dailyMode, setDailyMode] = useState<'page' | 'index'>('page');
+  const [browseMonth, setBrowseMonth] = useState<string>(
+    `${todayStr.slice(0, 7)}`
+  );
+
+  // Helper for prev and next day navigation
+  const handlePrevDay = () => {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() - 1);
+    setSelectedDate(d.toISOString().split('T')[0]);
+  };
+
+  const handleNextDay = () => {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() + 1);
+    setSelectedDate(d.toISOString().split('T')[0]);
+  };
+
+  // Group entries of browseMonth by date for the index list
+  const monthDateIndex = useMemo(() => {
+    const map = new Map<string, { count: number; totalMeters: number; clientNames: string[] }>();
+    for (const e of entries) {
+      if (e.date.startsWith(browseMonth)) {
+        const cur = map.get(e.date) || { count: 0, totalMeters: 0, clientNames: [] };
+        cur.count += 1;
+        cur.totalMeters += e.meters || 0;
+        if (cur.clientNames.length < 3) cur.clientNames.push(e.clientName);
+        map.set(e.date, cur);
+      }
+    }
+    return Array.from(map.entries())
+      .map(([date, data]) => ({ date, ...data }))
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }, [entries, browseMonth]);
   const [finalizedDates, setFinalizedDates] = useState<Set<string>>(() => {
     try {
       const saved = localStorage.getItem('vtc_finalized_dates');
@@ -56,21 +90,6 @@ export const DailyEntryView: React.FC<DailyEntryViewProps> = ({
     // Default past dates are finalized
     return new Set<string>();
   });
-
-  // Calculate Last 3 Days for the compact top selector
-  const last3Days = useMemo(() => {
-    const dates: { dateStr: string; label: string }[] = [];
-    const labels = ['આજે', 'ગઈકાલે', 'પરમદિવસે'];
-    for (let i = 0; i < 3; i++) {
-      const dt = new Date();
-      dt.setDate(dt.getDate() - i);
-      dates.push({
-        dateStr: dt.toISOString().split('T')[0],
-        label: labels[i],
-      });
-    }
-    return dates;
-  }, []);
 
   // Determine if the currently viewed date is locked
   const isPastDate = selectedDate < todayStr;
@@ -242,68 +261,171 @@ export const DailyEntryView: React.FC<DailyEntryViewProps> = ({
         </div>
       )}
 
-      {/* Top Banner with Clean Compact Selector (Max 3 Days) */}
+      {/* Top Banner with Clean Month/Date Selector & Mode Switcher */}
       <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200/80 space-y-3">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-                <span>📝</span> ડેઇલી થ્રેડ કટિંગ એન્ટ્રી
+                <span>📓</span> ડેઇલી ડાયરી (લાંબો રોજમેળ ચોપડો)
               </h2>
               {isCurrentlyLocked ? (
                 <span className="inline-flex items-center gap-1 bg-slate-900 text-amber-400 font-bold text-xs px-2.5 py-0.5 rounded-full border border-slate-800">
                   <Lock className="w-3 h-3" />
-                  સેવ & અપડેટ થયેલ (Locked)
+                  સેવ & અપડેટ થયેલ
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 font-bold text-xs px-2.5 py-0.5 rounded-full">
                   <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                  ચાલુ એન્ટ્રી (Active)
+                  ચાલુ એન્ટ્રી
                 </span>
               )}
             </div>
             <p className="text-xs text-slate-500 mt-1">
-              સાંજે ડાયરીમાંથી એન્ટ્રી કરી વેરિફાય કર્યા બાદ <strong>'સેવ & અપડેટ'</strong> કરો
+              મહિનો અને તારીખ પસંદ કરી અસલ લાંબા ચોપડાનું પાનું જુઓ અને રોજિંદી એન્ટ્રી કરો
             </p>
           </div>
 
-          {/* Compact Date Controls: Last 3 Days Pills + Clean Date Picker */}
+          {/* Controls: Mode Switcher & Date Navigation */}
           <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-            {/* Last 3 Days Pills */}
-            <div className="flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200 text-xs font-bold">
-              {last3Days.map((item) => (
-                <button
-                  key={item.dateStr}
-                  onClick={() => setSelectedDate(item.dateStr)}
-                  className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
-                    selectedDate === item.dateStr
-                      ? 'bg-amber-500 text-slate-950 font-black shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-                  }`}
-                  title={formatDateDDMMYYYY(item.dateStr)}
-                >
-                  {item.label}
-                </button>
-              ))}
+            {/* If in page mode: Show Back Button to go to month/date index */}
+            {dailyMode === 'page' ? (
+              <button
+                type="button"
+                onClick={() => setDailyMode('index')}
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-amber-400 font-bold rounded-2xl text-xs transition-all shadow-xs cursor-pointer"
+              >
+                <span>📅</span>
+                <span>મહિનો / તારીખ બદલો (ઇન્ડેક્સ)</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setDailyMode('page')}
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-2xl text-xs transition-all shadow-xs cursor-pointer"
+              >
+                <span>← પાછા જાઓ (ચોપડા પેજ પર)</span>
+              </button>
+            )}
+
+            {/* Quick Prev / Next Day navigation */}
+            <div className="flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200">
+              <button
+                type="button"
+                onClick={handlePrevDay}
+                className="px-2.5 py-1 text-slate-700 hover:bg-white rounded-xl text-xs font-bold transition-all cursor-pointer"
+                title="અગાઉની તારીખ"
+              >
+                ← અગાઉનો દિવસ
+              </button>
+              <span className="font-mono font-black text-xs px-2 text-slate-900">
+                {formatDateDDMMYYYY(selectedDate)}
+              </span>
+              <button
+                type="button"
+                onClick={handleNextDay}
+                className="px-2.5 py-1 text-slate-700 hover:bg-white rounded-xl text-xs font-bold transition-all cursor-pointer"
+                title="આગળની તારીખ"
+              >
+                આગળનો દિવસ →
+              </button>
             </div>
 
             {/* Calendar Input */}
             <label className="relative flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-300 rounded-2xl px-3 py-1.5 text-xs cursor-pointer shadow-xs transition-colors">
               <Calendar className="w-4 h-4 text-amber-600 shrink-0" />
-              <span className="font-mono font-bold text-slate-800">
-                તારીખ: {formatDateDDMMYYYY(selectedDate)}
-              </span>
               <input
                 type="date"
                 value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
+                onChange={(e) => {
+                  setSelectedDate(e.target.value);
+                  setDailyMode('page');
+                }}
                 className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                title="બીજી તારીખ પસંદ કરો"
+                title="કેલેન્ડરમાંથી તારીખ પસંદ કરો"
               />
             </label>
           </div>
         </div>
       </div>
+
+      {/* ================= MONTH & DATE INDEX VIEW (WHEN REQUESTED) ================= */}
+      {dailyMode === 'index' && (
+        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200/80 space-y-5 animate-in fade-in duration-150">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-slate-200">
+            <div>
+              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                <span>📑</span> મહિનો પસંદ કરી તારીખ વાઇઝ ચોપડો ખોલો
+              </h3>
+              <p className="text-xs text-slate-500">
+                જે તારીખ પર ક્લિક કરશો તે દિવસનું અસલ લાંબુ ચોપડા પેજ ખુલી જશે
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-slate-600">મહિનો:</span>
+              <input
+                type="month"
+                value={browseMonth}
+                onChange={(e) => setBrowseMonth(e.target.value)}
+                className="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 cursor-pointer focus:ring-2 focus:ring-amber-500"
+              />
+            </div>
+          </div>
+
+          {monthDateIndex.length === 0 ? (
+            <div className="py-12 text-center text-slate-400 text-xs sm:text-sm">
+              આ મહિના માટે હજુ સુધી કોઈ એન્ટ્રી નથી નોંધાયેલી.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {monthDateIndex.map((item) => {
+                const isSelected = item.date === selectedDate;
+                return (
+                  <button
+                    key={item.date}
+                    type="button"
+                    onClick={() => {
+                      setSelectedDate(item.date);
+                      setDailyMode('page');
+                    }}
+                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer shadow-2xs hover:shadow-sm ${
+                      isSelected
+                        ? 'bg-amber-50 border-amber-400 ring-2 ring-amber-400'
+                        : 'bg-slate-50/70 hover:bg-white border-slate-200'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <span className="font-mono font-black text-sm text-slate-900">
+                        {formatDateDDMMYYYY(item.date)}
+                      </span>
+                      <span className="text-[10px] bg-slate-900 text-amber-400 font-bold px-2 py-0.5 rounded-full">
+                        {item.count} પાર્ટી
+                      </span>
+                    </div>
+
+                    <div className="mt-2 text-xs">
+                      <span className="text-slate-500">કુલ કાપડ: </span>
+                      <strong className="text-slate-900 font-mono">
+                        {item.totalMeters.toLocaleString('gu-IN')} મીટર
+                      </strong>
+                    </div>
+
+                    <div className="mt-1 text-[11px] text-slate-400 truncate font-sans">
+                      {item.clientNames.join(', ')}...
+                    </div>
+
+                    <div className="mt-2.5 pt-2 border-t border-slate-200/80 flex justify-between items-center text-[11px] font-bold text-amber-700">
+                      <span>ચોપડા પેજ જુઓ</span>
+                      <span>→</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column (5 Cols): Entry Form OR Locked State */}

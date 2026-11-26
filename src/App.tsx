@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Navbar } from './components/Navbar';
 import { DailyEntryView } from './components/DailyEntryView';
 import { MonthlyBillingView } from './components/MonthlyBillingView';
+import { BillDiaryView } from './components/BillDiaryView';
 import { ClientsView } from './components/ClientsView';
 import { SettingsBackupView } from './components/SettingsBackupView';
 import { PaymentModal } from './components/PaymentModal';
@@ -17,7 +18,7 @@ import {
 import { calculateClientMonth } from './utils/billing';
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<'daily' | 'monthly' | 'clients' | 'settings'>('daily');
+  const [activeTab, setActiveTab] = useState<'daily' | 'monthly' | 'bill' | 'clients' | 'settings'>('daily');
   const [clients, setClients] = useState<Client[]>([]);
   const [entries, setEntries] = useState<DailyEntry[]>([]);
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
@@ -199,6 +200,16 @@ export function App() {
 
         {activeTab === 'monthly' && (
           <MonthlyBillingView
+            clients={clients}
+            entries={entries}
+            payments={payments}
+            settings={settings}
+            onOpenPaymentModal={(clientId) => setPaymentModalClientId(clientId)}
+          />
+        )}
+
+        {activeTab === 'bill' && (
+          <BillDiaryView
             clients={clients}
             entries={entries}
             payments={payments}

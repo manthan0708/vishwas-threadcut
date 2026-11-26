@@ -104,4 +104,32 @@ describe('Billing Calculation & Ledger Logic', () => {
     expect(decodeURIComponent(wa)).toContain('રમેશભાઈ એમ્બ્રોઇડરી');
     expect(decodeURIComponent(wa)).toContain('કુલ ચૂકવવાપાત્ર બાકી રકમ');
   });
+
+  it('VERIFICATION & ATTACK VECTOR: verifies getClientMultiMonthLedger 10-month statement and "જમા જમા" consistency', async () => {
+    const entries: DailyEntry[] = [
+      { id: 'e1', clientId: 'client-1', clientName: 'રમેશભાઈ', date: '2026-11-05', meters: 5000, rateApplied: 1.15, createdAt: '' },
+    ];
+    const payments: PaymentRecord[] = [
+      { id: 'p1', clientId: 'client-1', month: '2026-10', date: '2026-10-20', amountPaid: 6000, paymentMode: 'cash', discountOrDamage: 0, createdAt: '' },
+    ];
+
+    const { getClientMultiMonthLedger } = await import('./billing');
+    const statement = getClientMultiMonthLedger(mockClient, entries, payments);
+
+    expect(statement.months.length).toBe(10);
+    // Earlier months (indices 0..5) should have isPaid = true representing settled past months
+    const paidPastMonth = statement.months[0];
+    expect(paidPastMonth.isPaid).toBe(true);
+    expect(paidPastMonth.paymentDate).toBeDefined();
+
+    // Current month (index 9) has 5000 * 1.15 = 5750 pending
+    const currentM = statement.months[9];
+    expect(currentM.isCurrentMonth).toBe(true);
+    expect(currentM.meters).toBe(5000);
+    expect(currentM.billAmount).toBe(5750);
+    expect(currentM.isPaid).toBe(false);
+
+    // Negative attack vector: ensure netDue cannot be negative
+    expect(statement.netDue).toBeGreaterThanOrEqual(0);
+  });
 });
