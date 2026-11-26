@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Navbar } from './components/Navbar';
+import { HomeScreen } from './components/HomeScreen';
 import { DailyEntryView } from './components/DailyEntryView';
 import { MonthlyBillingView } from './components/MonthlyBillingView';
 import { BillDiaryView } from './components/BillDiaryView';
@@ -18,7 +19,7 @@ import {
 import { calculateClientMonth } from './utils/billing';
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<'daily' | 'monthly' | 'bill' | 'clients' | 'settings'>('daily');
+  const [activeTab, setActiveTab] = useState<'home' | 'daily' | 'monthly' | 'bill' | 'clients' | 'settings'>('home');
   const [clients, setClients] = useState<Client[]>([]);
   const [entries, setEntries] = useState<DailyEntry[]>([]);
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
@@ -188,7 +189,31 @@ export function App() {
         pendingAnomaliesCount={pendingAnomaliesCount}
       />
 
+      {/* Quick Return to Home Button when viewing any Diary */}
+      {activeTab !== 'home' && (
+        <div className="max-w-7xl mx-auto px-4 pt-4">
+          <button
+            type="button"
+            onClick={() => setActiveTab('home')}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 border border-slate-300 rounded-2xl text-xs font-black text-slate-800 shadow-xs transition-all cursor-pointer group"
+          >
+            <span className="text-amber-600 font-bold group-hover:-translate-x-1 transition-transform">←</span>
+            <span>મેઈન સ્ક્રીન (મુખ્ય ૪ બટન પર પાછા જાઓ)</span>
+          </button>
+        </div>
+      )}
+
       <main>
+        {activeTab === 'home' && (
+          <HomeScreen
+            onSelectDiary={(tab) => setActiveTab(tab)}
+            clients={clients}
+            entries={entries}
+            payments={payments}
+            settings={settings}
+          />
+        )}
+
         {activeTab === 'daily' && (
           <DailyEntryView
             clients={clients}
