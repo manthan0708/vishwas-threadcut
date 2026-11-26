@@ -44,6 +44,9 @@ export const DailyEntryView: React.FC<DailyEntryViewProps> = ({
   // USER RULE: Default hide Rate and Rupees unless checkbox is checked!
   const [showRateAndRupees, setShowRateAndRupees] = useState<boolean>(false);
 
+  // USER REQUEST: Authentic Deshi Chopdo (Ruled Notebook) View vs Standard Table
+  const [entryDisplayMode, setEntryDisplayMode] = useState<'chopdo' | 'table'>('chopdo');
+
   // Locked/Finalized Dates tracking (stored in localStorage so it persists)
   const [finalizedDates, setFinalizedDates] = useState<Set<string>>(() => {
     try {
@@ -513,7 +516,33 @@ export const DailyEntryView: React.FC<DailyEntryViewProps> = ({
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2.5">
+                {/* View Switcher: Chopdo (Notebook) vs Table */}
+                <div className="flex items-center bg-slate-100 p-1 rounded-xl text-xs font-bold border border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => setEntryDisplayMode('chopdo')}
+                    className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                      entryDisplayMode === 'chopdo'
+                        ? 'bg-amber-500 text-slate-950 font-black shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    📓 રોજમેળ ચોપડો
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEntryDisplayMode('table')}
+                    className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                      entryDisplayMode === 'table'
+                        ? 'bg-amber-500 text-slate-950 font-black shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    📋 ટેબલ
+                  </button>
+                </div>
+
                 {/* Checkbox to Toggle Rate & Rupees Display */}
                 <label className="flex items-center gap-1.5 cursor-pointer bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-700 select-none transition-colors">
                   <input
@@ -527,10 +556,10 @@ export const DailyEntryView: React.FC<DailyEntryViewProps> = ({
                   ) : (
                     <Square className="w-4 h-4 text-slate-400" />
                   )}
-                  <span>ભાવ & રકમ (₹) દર્શાવો</span>
+                  <span>ભાવ & રકમ</span>
                 </label>
 
-                <div className="flex gap-2 text-xs bg-slate-50 p-2 rounded-xl border border-slate-200">
+                <div className="flex gap-2 text-xs bg-slate-50 p-1.5 rounded-xl border border-slate-200">
                   <div>
                     કુલ મીટર: <span className="font-black text-slate-900">{totalDayMeters.toLocaleString('gu-IN')}</span>
                   </div>
@@ -543,12 +572,116 @@ export const DailyEntryView: React.FC<DailyEntryViewProps> = ({
               </div>
             </div>
 
-            {/* Table */}
+            {/* Entries Display: Authentic Chopdo OR Standard Table */}
             {dateEntries.length === 0 ? (
               <div className="py-12 text-center text-slate-400 text-xs sm:text-sm border border-dashed rounded-2xl p-6">
                 આ તારીખ માટે કોઈ એન્ટ્રી નથી. ડાબી બાજુથી ગ્રાહક પસંદ કરીને મીટર ઉમેરો.
               </div>
+            ) : entryDisplayMode === 'chopdo' ? (
+              /* ================= 1. AUTHENTIC DESHI CHOPDO (PHOTO 3 STYLE) ================= */
+              <div className="deshi-chopdo-page rounded-3xl border-2 border-slate-300 shadow-md p-4 sm:p-6 font-mono text-slate-900 overflow-x-auto min-h-[460px]">
+                {/* Top Center Date as written in photo: ૭ , ૧૧ , ૨૬ */}
+                <div className="text-center pb-3 border-b-2 border-red-400 mb-2">
+                  <span className="bg-white/90 px-6 py-1 rounded-full text-lg font-black tracking-widest text-slate-900 border border-slate-300 shadow-xs">
+                    {formatDateDDMMYYYY(selectedDate).replace(/\//g, ' , ')}
+                  </span>
+                  <span className="text-[11px] text-slate-500 block mt-1 font-sans font-semibold">
+                    (અસલ દૈનિક રોજમેળ ચોપડો — સુરત ટેક્સટાઈલ જોબવર્ક)
+                  </span>
+                </div>
+
+                <table className="w-full text-xs sm:text-sm border-collapse">
+                  <thead>
+                    <tr className="border-b-2 border-red-300 text-slate-600 font-bold font-sans">
+                      <th className="py-2 px-3 text-left w-2/5">લોટ્સ / મીટર વિગત (Left)</th>
+                      <th className="py-2 px-3 text-center w-1/5 border-x-2 border-blue-200 bg-amber-50/40">કુલ મીટર</th>
+                      <th className="py-2 px-3 text-left w-2/5">ગ્રાહકનું નામ & વિગત (Right)</th>
+                      {!isCurrentlyLocked && <th className="py-2 px-1 text-center w-8"></th>}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-blue-200">
+                    {dateEntries.map((entry) => {
+                      const client = clients.find((c) => c.id === entry.clientId);
+                      const hasMultipleVisits = entry.metersBreakdown && entry.metersBreakdown.length > 1;
+
+                      return (
+                        <tr key={entry.id} className="hover:bg-amber-100/40 transition-colors">
+                          {/* Left: Lots Breakdown e.g. 135 + 330 + 140 */}
+                          <td className="py-2 px-3 font-bold text-slate-800">
+                            {hasMultipleVisits ? (
+                              <span className="text-amber-900 bg-amber-100/80 px-2 py-0.5 rounded font-bold">
+                                {entry.metersBreakdown!.join(' + ')}
+                              </span>
+                            ) : (
+                              <span>{entry.meters}</span>
+                            )}
+                          </td>
+
+                          {/* Center: Total Day Meters */}
+                          <td className="py-2 px-3 text-center font-black text-slate-950 border-x-2 border-blue-200 bg-amber-50/30 text-sm">
+                            {entry.meters.toLocaleString('gu-IN')}
+                          </td>
+
+                          {/* Right: Customer Name with Checkmark and Account # */}
+                          <td className="py-2 px-3 font-bold text-slate-900">
+                            <span className="text-emerald-700 mr-1.5 font-black">✓</span>
+                            <span>{entry.clientName}</span>
+                            {client && (
+                              <span className="text-xs text-slate-500 font-normal ml-1 font-mono">
+                                {client.accountNo ? ` #${client.accountNo}` : ''}
+                              </span>
+                            )}
+                            {entry.notes && (
+                              <span className="text-xs text-slate-500 font-normal ml-2 font-sans">
+                                ({entry.notes})
+                              </span>
+                            )}
+                            {showRateAndRupees && (
+                              <span className="text-xs text-amber-800 font-bold ml-2">
+                                [₹{(entry.meters * entry.rateApplied).toFixed(2)}]
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Delete Action if not locked */}
+                          {!isCurrentlyLocked && (
+                            <td className="py-2 px-1 text-center">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (confirm(`શું તમે ${entry.clientName} ની આ એન્ટ્રી ડિલીટ કરવા માંગો છો?`)) {
+                                    onDeleteEntry(entry.id);
+                                  }
+                                }}
+                                className="text-slate-400 hover:text-red-600 p-1 rounded transition-colors cursor-pointer"
+                                title="Delete entry"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  {/* Daily Total Summary Row */}
+                  <tfoot>
+                    <tr className="border-t-2 border-b-2 border-red-500 bg-amber-100/60 font-black">
+                      <td className="py-2.5 px-3 text-slate-800">
+                        આજનો કુલ સરવાળો ({dateEntries.length} ગ્રાહકો)
+                      </td>
+                      <td className="py-2.5 px-3 text-center text-slate-950 border-x-2 border-blue-300 text-base">
+                        {totalDayMeters.toLocaleString('gu-IN')} મી.
+                      </td>
+                      <td className="py-2.5 px-3 text-slate-900" colSpan={!isCurrentlyLocked ? 2 : 1}>
+                        {showRateAndRupees ? `કુલ રકમ: ₹${totalDayAmount.toFixed(2)}` : 'સંપૂર્ણ હિસાબ ચકાસાયેલ'}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
             ) : (
+              /* ================= 2. STANDARD TABLE VIEW ================= */
               <div className="overflow-x-auto border border-slate-200 rounded-2xl">
                 <table className="w-full text-left text-xs sm:text-sm">
                   <thead className="bg-slate-50 text-slate-700 border-b border-slate-200">

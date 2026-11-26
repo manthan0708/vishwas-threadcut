@@ -24,6 +24,9 @@ export const BillInvoiceModal: React.FC<BillInvoiceModalProps> = ({
   // Option 3: Default false -> do not show 2nd page daily ledger unless checked
   const [includeSecondPage, setIncludeSecondPage] = useState<boolean>(false);
 
+  // USER REQUEST: Authentic Deshi Chopdo Slip (Photo 1 & 2 Style) vs Voucher
+  const [invoiceStyle, setInvoiceStyle] = useState<'chopdo' | 'voucher'>('chopdo');
+
   // Month formatted strictly as 01/MM/YYYY
   const today = new Date();
   const currentMonthNum = String(today.getMonth() + 1).padStart(2, '0');
@@ -103,6 +106,32 @@ export const BillInvoiceModal: React.FC<BillInvoiceModalProps> = ({
             </div>
 
             <div className="flex items-center gap-2">
+              {/* View Switcher: Authentic Chopdo Slip vs Modern Voucher */}
+              <div className="flex items-center bg-slate-800 p-1 rounded-xl text-xs font-bold border border-slate-700">
+                <button
+                  type="button"
+                  onClick={() => setInvoiceStyle('chopdo')}
+                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                    invoiceStyle === 'chopdo'
+                      ? 'bg-amber-500 text-slate-950 font-black shadow-xs'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  📑 ચોપડો સ્લીપ
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInvoiceStyle('voucher')}
+                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                    invoiceStyle === 'voucher'
+                      ? 'bg-amber-500 text-slate-950 font-black shadow-xs'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  📄 વાઉચર
+                </button>
+              </div>
+
               <button
                 onClick={handlePrint}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-xs font-bold text-slate-200 transition-colors cursor-pointer"
@@ -184,39 +213,184 @@ export const BillInvoiceModal: React.FC<BillInvoiceModalProps> = ({
 
         {/* Scrollable Bill Area */}
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
-          {/* ================= PAGE 1: MAIN MONTHLY INVOICE ================= */}
-        <div className="p-6 sm:p-8 space-y-6 text-slate-900 bg-white" id="printable-bill-page1">
-          {/* Business Header */}
-          <div className="border-b-2 border-slate-900 pb-4 flex justify-between items-start">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-2xl font-black text-slate-950 tracking-tight">
-                  {settings.businessName || 'વિશ્વાસ થ્રેડ કટિંગ'}
-                </span>
-                <span className="text-[10px] bg-amber-500 text-slate-950 font-black px-2 py-0.5 rounded uppercase">
-                  ઓરિજિનલ
-                </span>
-              </div>
-              <p className="text-xs font-semibold text-slate-700 mt-1">
-                તમામ પ્રકારના એમ્બ્રોઇડરી વર્ક થ્રેડ કટિંગ & ફિનિશિંગ જોબવર્ક
-              </p>
-              <p className="text-xs text-slate-500">
-                પ્રોપ્રાઈટર: <strong className="text-slate-800">{settings.ownerName}</strong> | મો.: {settings.phone}
-              </p>
-            </div>
+          {invoiceStyle === 'chopdo' ? (
+            /* ================= 1. AUTHENTIC DESHI CHOPDO SLIP (PHOTO 1 & 2 STYLE) ================= */
+            <div className="p-4 sm:p-6 bg-slate-100 flex justify-center print:p-0 print:bg-white" id="printable-bill-page1">
+              <div className="bg-white rounded-2xl shadow-xl border-2 border-slate-300 w-full max-w-xl overflow-hidden font-mono text-slate-900 print:shadow-none print:border-slate-800">
+                {/* Perforated Top Header */}
+                <div className="bg-red-500/10 border-b-2 border-dashed border-red-300 py-1.5 px-4 text-center text-[11px] font-sans text-red-800 font-bold flex items-center justify-between">
+                  <span>✂️ હિસાબ સ્લીપ</span>
+                  <span>{settings.businessName || 'વિશ્વાસ થ્રેડ કટિંગ'} — માસિક ખાતાવહી સ્લીપ</span>
+                  <span>માસ: {lastMonthFormatted}</span>
+                </div>
 
-            <div className="text-right">
-              <span className="inline-block bg-slate-900 text-amber-400 font-black text-xs uppercase px-3 py-1 rounded-lg">
-                હિસાબ વાઉચર
-              </span>
-              <p className="text-[11px] font-mono text-slate-500 mt-1.5">
-                વાઉચર નં: <strong className="text-slate-800">{billNo}</strong>
-              </p>
-              <p className="text-xs font-bold text-slate-700">
-                તારીખ: <span className="font-mono text-slate-950 font-black">{lastMonthFormatted}</span>
-              </p>
+                {/* Header row: Account # on left, Name & Phone on right */}
+                <div className="p-4 pb-2 border-b-2 border-slate-800 flex justify-between items-end bg-amber-50/20">
+                  <div className="text-left">
+                    <span className="text-3xl font-black text-slate-900 leading-none">
+                      {calculation.accountNo}
+                    </span>
+                    <span className="text-[10px] text-slate-500 block font-sans">ખાતા નંબર</span>
+                  </div>
+
+                  <div className="text-right">
+                    <h4 className="text-lg font-black text-slate-950 tracking-wide">
+                      {calculation.clientName}
+                    </h4>
+                    <span className="text-xs font-bold text-slate-700 tracking-wider block">
+                      {calculation.phone} {calculation.area ? `(${calculation.area})` : ''}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 2-Column Split Body */}
+                <div className="grid grid-cols-12 min-h-[420px] text-xs">
+                  {/* Left Column (7 Cols): Daily lots list on ruled lines */}
+                  <div className="col-span-7 border-r-2 border-blue-400 p-3 divide-y divide-blue-100">
+                    <div className="flex justify-between pb-1 font-bold text-slate-600 text-[11px] border-b-2 border-blue-300 font-sans mb-1">
+                      <span>કાપડના મીટર</span>
+                      <span>તારીખ (Date)</span>
+                    </div>
+
+                    {calculation.entries.length === 0 ? (
+                      <div className="py-12 text-center text-slate-400 font-sans">
+                        આ માસમાં કોઈ એન્ટ્રી નથી
+                      </div>
+                    ) : (
+                      calculation.entries.slice(0, 25).map((e) => {
+                        const [y, m, d] = e.date.split('-');
+                        const formattedSlipDate = `${parseInt(d, 10)} , ${parseInt(m, 10)} , ${y.slice(-2)}`;
+                        return (
+                          <div key={e.id} className="flex justify-between py-1 px-1 hover:bg-amber-50/50">
+                            <span className="font-bold text-slate-900 text-xs">
+                              {e.meters}
+                            </span>
+                            <span className="font-bold text-slate-700 tracking-wider">
+                              {formattedSlipDate}
+                            </span>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {/* Right Column (5 Cols): Calculation & Totals + UPI QR */}
+                  <div className="col-span-5 p-3 flex flex-col justify-between bg-slate-50/60 font-sans">
+                    <div className="space-y-3">
+                      <div className="border-b border-slate-300 pb-2">
+                        <span className="text-[10px] text-slate-500 uppercase block font-bold">કુલ કાપડ:</span>
+                        <span className="text-base font-black text-slate-950 font-mono">
+                          {calculation.totalMeters.toLocaleString('gu-IN')} મી.
+                        </span>
+                      </div>
+
+                      <div className="border-b border-slate-300 pb-2">
+                        <span className="text-[10px] text-slate-500 uppercase block font-bold">મીટર દીઠ ભાવ:</span>
+                        <span className="text-sm font-black text-amber-800 font-mono">
+                          × ₹{calculation.ratePerMeter.toFixed(2)}
+                        </span>
+                      </div>
+
+                      <div className="bg-amber-100/70 p-2 rounded-xl border border-amber-300">
+                        <span className="text-[10px] text-amber-900 block font-bold">આ માસનું બિલ:</span>
+                        <span className="text-base font-black text-amber-950 font-mono">
+                          ₹{calculation.currentMonthAmount.toLocaleString('gu-IN')}
+                        </span>
+                      </div>
+
+                      {calculation.previousBalance > 0 && (
+                        <div className="text-[11px] text-slate-600 pt-1">
+                          <span>જૂની બાકી: </span>
+                          <strong className="text-slate-900 font-mono">₹{calculation.previousBalance.toLocaleString('gu-IN')}</strong>
+                        </div>
+                      )}
+
+                      {calculation.paymentsReceived > 0 && (
+                        <div className="text-[11px] text-emerald-700 pt-0.5">
+                          <span>મળેલ જમા: </span>
+                          <strong className="font-mono">-₹{calculation.paymentsReceived.toLocaleString('gu-IN')}</strong>
+                        </div>
+                      )}
+
+                      {calculation.damageDeduction > 0 && (
+                        <div className="text-[11px] text-sky-700 pt-0.5">
+                          <span>નુકસાની કપાત: </span>
+                          <strong className="font-mono">-₹{calculation.damageDeduction.toLocaleString('gu-IN')}</strong>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Bottom Grand Total Box + QR Code */}
+                    <div className="pt-3 border-t-2 border-slate-900 mt-4 space-y-2">
+                      <div>
+                        <span className="text-[10px] text-slate-500 uppercase font-bold block">ચૂકવવાપાત્ર બાકી:</span>
+                        <span className="text-xl font-black text-slate-950 font-mono block">
+                          ₹{grandTotalDue.toLocaleString('gu-IN')}
+                        </span>
+                      </div>
+
+                      {/* UPI QR */}
+                      {settings.upiId && grandTotalDue > 0 && (
+                        <div className="bg-white p-2 rounded-xl border border-slate-300 text-center">
+                          <img
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=${encodeURIComponent(
+                              `upi://pay?pa=${settings.upiId}&pn=${encodeURIComponent(
+                                settings.businessName || 'Vishwas Thread Cutting'
+                              )}&am=${grandTotalDue}&cu=INR`
+                            )}`}
+                            alt="UPI QR"
+                            className="w-16 h-16 mx-auto"
+                          />
+                          <span className="text-[9px] text-slate-500 font-bold block mt-1">
+                            GPay / PhonePe થી સ્કેન કરો
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="text-[10px] text-slate-500 text-right pt-2 border-t border-dashed">
+                        {settings.businessName || 'વિશ્વાસ થ્રેડ કટિંગ'} વતી
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            /* ================= 2. MODERN PRINTABLE VOUCHER ================= */
+            <>
+              {/* PAGE 1: MAIN MONTHLY INVOICE */}
+              <div className="p-6 sm:p-8 space-y-6 text-slate-900 bg-white" id="printable-bill-page1">
+                {/* Business Header */}
+                <div className="border-b-2 border-slate-900 pb-4 flex justify-between items-start">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl font-black text-slate-950 tracking-tight">
+                        {settings.businessName || 'વિશ્વાસ થ્રેડ કટિંગ'}
+                      </span>
+                      <span className="text-[10px] bg-amber-500 text-slate-950 font-black px-2 py-0.5 rounded uppercase">
+                        ઓરિજિનલ
+                      </span>
+                    </div>
+                    <p className="text-xs font-semibold text-slate-700 mt-1">
+                      તમામ પ્રકારના એમ્બ્રોઇડરી વર્ક થ્રેડ કટિંગ & ફિનિશિંગ જોબવર્ક
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      પ્રોપ્રાઈટર: <strong className="text-slate-800">{settings.ownerName}</strong> | મો.: {settings.phone}
+                    </p>
+                  </div>
+
+                  <div className="text-right">
+                    <span className="inline-block bg-slate-900 text-amber-400 font-black text-xs uppercase px-3 py-1 rounded-lg">
+                      હિસાબ વાઉચર
+                    </span>
+                    <p className="text-[11px] font-mono text-slate-500 mt-1.5">
+                      વાઉચર નં: <strong className="text-slate-800">{billNo}</strong>
+                    </p>
+                    <p className="text-xs font-bold text-slate-700">
+                      તારીખ: <span className="font-mono text-slate-950 font-black">{lastMonthFormatted}</span>
+                    </p>
+                  </div>
+                </div>
 
           {/* Client Details Box with Account Number */}
           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
@@ -504,6 +678,8 @@ export const BillInvoiceModal: React.FC<BillInvoiceModalProps> = ({
             </div>
           </div>
         )}
+            </>
+          )}
         </div>
       </div>
     </div>
